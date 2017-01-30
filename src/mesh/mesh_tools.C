@@ -647,8 +647,14 @@ unsigned int MeshTools::n_levels(const MeshBase & mesh)
 
   MeshBase::const_element_iterator el =
     mesh.unpartitioned_elements_begin();
-  const MeshBase::const_element_iterator end_el =
+  MeshBase::const_element_iterator end_el =
     mesh.unpartitioned_elements_end();
+
+  if (mesh.is_serial())
+  {
+    el = mesh.elements_begin();
+    end_el = mesh.elements_end();
+  }
 
   unsigned int count = 0;
   std::ostringstream ss;
