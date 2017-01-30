@@ -22,6 +22,7 @@
 // Local includes
 #include "parallel.h"
 #include "libmesh_logging.h"
+#include "print_trace.h"
 
 // C++ includes
 #include <iterator> // iterator_traits
@@ -1364,6 +1365,7 @@ inline data_type dataplusint_type<long double>() { return MPI_LONG_DOUBLE_INT; }
 template <typename T>
 inline bool Communicator::verify(const T & r) const
 {
+  //print_trace();
   if (this->size() > 1 && Attributes<T>::has_min_max == true)
     {
       T tempmin = r, tempmax = r;

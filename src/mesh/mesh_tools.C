@@ -622,8 +622,16 @@ unsigned int MeshTools::n_local_levels(const MeshBase & mesh)
   MeshBase::const_element_iterator el = mesh.local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.local_elements_end();
 
+  unsigned int count = 0;
+  std::ostringstream ss;
+  ss << "calculating NLEVELS\n";
   for( ; el != end_el; ++el)
+  {
+    ss << "    checking nlevels elem count i=" << ++count << "\n";
     max_level = std::max((*el)->level(), max_level);
+  }
+  ss << "done calculating NLEVELS\n";
+  std::cout << ss.str() << std::endl;
 
   return max_level + 1;
 }
@@ -636,13 +644,25 @@ unsigned int MeshTools::n_levels(const MeshBase & mesh)
 
   unsigned int nl = MeshTools::n_local_levels(mesh);
 
+
   MeshBase::const_element_iterator el =
     mesh.unpartitioned_elements_begin();
   const MeshBase::const_element_iterator end_el =
     mesh.unpartitioned_elements_end();
 
+  unsigned int count = 0;
+  std::ostringstream ss;
+  ss << "nelem[invalidid]=" << mesh.n_elem_on_proc(DofObject::invalid_processor_id) << "\n";
+  ss << "nelem[0]=" << mesh.n_elem_on_proc(0) << "\n";
+  ss << "nelem[1]=" << mesh.n_elem_on_proc(1) << "\n";
+  ss << "calculating NLEVELS unstructured\n";
   for( ; el != end_el; ++el)
+  {
+    ss << "    checking nlevels elem count i=" << ++count << "\n";
     nl = std::max((*el)->level() + 1, nl);
+  }
+  ss << "done calculating NLEVELS unstructured\n";
+  std::cout << ss.str() << std::endl;
 
   mesh.comm().max(nl);
   return nl;

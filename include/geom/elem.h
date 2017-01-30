@@ -2112,8 +2112,10 @@ unsigned int Elem::level() const
   // created directly from file
   // or by the user, so I am a
   // level-0 element
+  std::cout << "spot1" << std::endl;
   if (this->parent() == libmesh_nullptr)
     return 0;
+  std::cout << "spot2" << std::endl;
 
   // if the parent and this element are of different
   // dimensionality we are at the same level as
@@ -2121,10 +2123,12 @@ unsigned int Elem::level() const
   // 3D element)
   if (this->dim() != this->parent()->dim())
     return this->parent()->level();
+  std::cout << "spot3" << std::endl;
 
   // otherwise we are at a level one
   // higher than our parent
   return (this->parent()->level() + 1);
+  std::cout << "spot4" << std::endl;
 
 #else
 

@@ -40,7 +40,7 @@
 #include <numeric>
 #include <set>
 
-
+#include "libmesh/print_trace.h"
 
 
 //-----------------------------------------------
@@ -943,10 +943,12 @@ void MeshCommunication::broadcast (MeshBase & mesh) const
 
   LOG_SCOPE("broadcast()", "MeshCommunication");
 
+  std::cout << "pre cleared nelems = " << mesh.n_elem() << std::endl;
   // Explicitly clear the mesh on all but processor 0.
   if (mesh.processor_id() != 0)
     mesh.clear();
 
+  std::cout << "cleared nelems = " << mesh.n_elem() << std::endl;
   // Broadcast nodes
   mesh.comm().broadcast_packed_range(&mesh,
                                      mesh.nodes_begin(),
@@ -958,6 +960,7 @@ void MeshCommunication::broadcast (MeshBase & mesh) const
   // elements will see their parents already in place.
   unsigned int n_levels = MeshTools::n_levels(mesh);
   mesh.comm().broadcast(n_levels);
+  std::cout << "nlevels=" << n_levels << std::endl;
 
   for (unsigned int l=0; l != n_levels; ++l)
     mesh.comm().broadcast_packed_range(&mesh,
@@ -965,6 +968,7 @@ void MeshCommunication::broadcast (MeshBase & mesh) const
                                        mesh.level_elements_end(l),
                                        &mesh,
                                        mesh_inserter_iterator<Elem>(mesh));
+  std::cout << "post add nelems = " << mesh.n_elem() << std::endl;
 
   // Make sure mesh_dimension and elem_dimensions are consistent.
   mesh.cache_elem_dims();
@@ -978,6 +982,10 @@ void MeshCommunication::broadcast (MeshBase & mesh) const
   // elements it can't locate.
   mesh.clear_point_locator();
 
+  std::ostringstream ss;
+  ss << "nelems = " << mesh.n_elem() << "\n";
+  print_trace(ss);
+  std::cout << ss.str() << std::endl;
   libmesh_assert (mesh.comm().verify(mesh.n_elem()));
   libmesh_assert (mesh.comm().verify(mesh.n_nodes()));
 

@@ -528,6 +528,8 @@ void CheckpointIO::read (const std::string & name)
   // have been prepared yet when is when that flag gets set to false... sigh.
   _parallel = _parallel || dynamic_cast<DistributedMesh *>(&mesh);
 
+  std::cout << "parallel=" << (_parallel ? "true" : "false") << std::endl;
+
   // If this is a serial mesh then we're going to only read it on processor 0 and broadcast it
   if (_parallel || _my_processor_id == 0)
     {
@@ -593,7 +595,10 @@ void CheckpointIO::read (const std::string & name)
 
   // If the mesh is serial then we only read it on processor 0 so we need to broadcast it
   if (!_parallel)
+  {
+    std::cout << "broadcasting from processor " << processor_id() << std::endl;
     MeshCommunication().broadcast(mesh);
+  }
 }
 
 

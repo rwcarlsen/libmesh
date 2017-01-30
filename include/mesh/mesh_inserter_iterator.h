@@ -49,7 +49,7 @@ struct mesh_inserter_iterator
 {
   mesh_inserter_iterator (MeshBase & m) : mesh(m) {}
 
-  void operator=(Elem * e) { mesh.add_elem(e); }
+  void operator=(Elem * e) { mesh.add_elem(e); std::cout << "adding-elem" << std::endl;}
 
   void operator=(Node * n) { mesh.insert_node(n); }
 
