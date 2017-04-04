@@ -1313,7 +1313,40 @@ void ExodusII_IO_Helper::write_nodal_coordinates(const MeshBase & mesh, bool use
     }
 }
 
-
+//int ex_put_elem_block (int   exoid,
+//                       ex_entity_id   elem_blk_id,
+//                       const char *elem_type,
+//                       int64_t num_elem_this_blk,
+//                       int64_t num_nodes_per_elem,
+//                       int64_t num_attr_per_elem)
+//{
+//  return ex_put_block( 1-exoid, EX_ELEM_BLOCK, 2-elem_blk_id,
+//    3-elem_type, 4-num_elem_this_blk, 5-num_nodes_per_elem,
+//    0 /*num_edge_per_elem*/, 0 /*num_face_per_elem*/, 6-num_attr_per_elem );
+//}
+//
+//int ex_put_block( int         exoid,
+//                  ex_entity_type blk_type,
+//                  ex_entity_id   blk_id,
+//                  const char* entry_descrip,
+//                  int64_t     num_entries_this_blk,
+//                  int64_t     num_nodes_per_entry,
+//                  int64_t     num_edges_per_entry,
+//                  int64_t     num_faces_per_entry,
+//                  int64_t     num_attr_per_entry )
+//{
+//  ex_block block;
+//  block.type = blk_type;
+//  block.id   = blk_id;
+//  strcpy(block.topology, entry_descrip);
+//  block.num_entry           = num_entries_this_blk;
+//  block.num_nodes_per_entry = num_nodes_per_entry;
+//  block.num_edges_per_entry = num_edges_per_entry;
+//  block.num_faces_per_entry = num_faces_per_entry;
+//  block.num_attribute       = num_attr_per_entry;
+//
+//  return ex_put_block_param(exoid, block);
+//}
 
 void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_discontinuous)
 {
@@ -1343,6 +1376,46 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
   elem_num_map.resize(n_active_elem);
   std::vector<int>::iterator curr_elem_map_end = elem_num_map.begin();
 
+  exII::ex_block_params blocks = {};
+  blocks.elem_blk_id = new int[num_elem_blk];
+  blocks.elem_type = new char*[num_elem_blk];
+  blocks.num_elem_this_blk = new int[num_elem_blk];
+  blocks.num_nodes_per_elem = new int[num_elem_blk];
+  blocks.num_edges_per_elem = new int[num_elem_blk];
+  blocks.num_faces_per_elem = new int[num_elem_blk];
+  blocks.num_attr_elem = new int[num_elem_blk];
+  int i = -1;
+  for (subdomain_map_type::iterator it=subdomain_map.begin(); it!=subdomain_map.end(); ++it)
+    {
+      i++;
+      // Get a reference to a vector of element IDs for this subdomain.
+      subdomain_map_type::mapped_type & tmp_vec = (*it).second;
+
+      ExodusII_IO_Helper::ElementMaps em;
+#ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
+      // Skip infinite element-blocks; they can not be viewed in most visualization software
+      // as paraview.
+      if (mesh.elem_ref(tmp_vec[0]).infinite())
+        continue;
+#endif
+      //Use the first element in this block to get representative information.
+      //Note that Exodus assumes all elements in a block are of the same type!
+      //We are using that same assumption here!
+      const ExodusII_IO_Helper::Conversion conv =
+        em.assign_conversion(mesh.elem_ref(tmp_vec[0]).type());
+      num_nodes_per_elem = mesh.elem_ref(tmp_vec[0]).n_nodes();
+
+      ((int*)blocks.elem_blk_id)[i] = (*it).first;
+      blocks.elem_type[i] = (char*)conv.exodus_elem_type().c_str();
+      blocks.num_elem_this_blk[i] = tmp_vec.size();
+      blocks.num_nodes_per_elem[i] = num_nodes_per_elem;
+      blocks.num_edges_per_elem[i] = 0;
+      blocks.num_faces_per_elem[i] = 0;
+      blocks.num_attr_elem[i] = 0;
+    }
+  exII::ex_put_concat_all_blocks(ex_id, &blocks);
+  EX_CHECK_ERR(ex_err, "Error writing element blocks.");
+
   // Note: It appears that there is a bug in exodusII::ex_put_name where
   // the index returned from the ex_id_lkup is erronously used.  For now
   // the work around is to use the alternative function ex_put_names, but
@@ -1357,7 +1430,6 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
 
   // node counter for discontinuous plotting
   unsigned int node_counter = 0;
-
   for (subdomain_map_type::iterator it=subdomain_map.begin(); it!=subdomain_map.end(); ++it)
     {
       block_ids[counter] = (*it).first;
@@ -1380,15 +1452,6 @@ void ExodusII_IO_Helper::write_elements(const MeshBase & mesh, bool use_disconti
       const ExodusII_IO_Helper::Conversion conv =
         em.assign_conversion(mesh.elem_ref(tmp_vec[0]).type());
       num_nodes_per_elem = mesh.elem_ref(tmp_vec[0]).n_nodes();
-
-      ex_err = exII::ex_put_elem_block(ex_id,
-                                       (*it).first,
-                                       conv.exodus_elem_type().c_str(),
-                                       tmp_vec.size(),
-                                       num_nodes_per_elem,
-                                       /*num_attr=*/0);
-
-      EX_CHECK_ERR(ex_err, "Error writing element block.");
 
       connect.resize(tmp_vec.size()*num_nodes_per_elem);
 
