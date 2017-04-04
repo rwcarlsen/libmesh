@@ -60,7 +60,7 @@ int main (int argc, char** argv)
   //std::cout << "Finished writing xdr file" << std::endl;
 
   std::cout << "Started writing exo file" << std::endl;
-  mesh.write("square.exo");
+  mesh.write("/tmp/square.exo");
   std::cout << "Finished writing exo file" << std::endl;
 
   return 0;
