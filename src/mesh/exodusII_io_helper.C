@@ -1588,26 +1588,32 @@ void ExodusII_IO_Helper::write_sidesets(const MeshBase & mesh)
     {
       NamesData names_table(side_boundary_ids.size(), MAX_STR_LENGTH);
 
+      struct exII::ex_set sets[side_boundary_ids.size()];
+
       for (std::size_t i=0; i<side_boundary_ids.size(); i++)
         {
           boundary_id_type ss_id = side_boundary_ids[i];
           int actual_id = ss_id;
 
+          sets[i] = {};
+          sets[i].type = exII::EX_SIDE_SET;
+          sets[i].id = actual_id;
+          sets[i].num_entry = elem[ss_id].size();
+          sets[i].num_distribution_factor = 0;
+          sets[i].entry_list = &elem[ss_id][0];
+          sets[i].extra_list = &side[ss_id][0];
+          sets[i].distribution_factor_list = NULL;
+
           names_table.push_back_entry(mesh.get_boundary_info().get_sideset_name(ss_id));
-
-          ex_err = exII::ex_put_side_set_param(ex_id, actual_id, elem[ss_id].size(), 0);
-          EX_CHECK_ERR(ex_err, "Error writing sideset parameters");
-
-          ex_err = exII::ex_put_side_set(ex_id, actual_id, &elem[ss_id][0], &side[ss_id][0]);
-          EX_CHECK_ERR(ex_err, "Error writing sidesets");
         }
+
+      ex_put_sets(ex_id, side_boundary_ids.size(), sets);
+      EX_CHECK_ERR(ex_err, "Error writing sidesets");
 
       ex_err = exII::ex_put_names(ex_id, exII::EX_SIDE_SET, names_table.get_char_star_star());
       EX_CHECK_ERR(ex_err, "Error writing sideset names");
     }
 }
-
-
 
 void ExodusII_IO_Helper::write_nodesets(const MeshBase & mesh)
 {
